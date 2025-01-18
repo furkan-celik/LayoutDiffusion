@@ -63,16 +63,18 @@ data:
     max_boxes: 10
     layout_length: 10
     num_classes_for_layout_object: 32
-    mask_size_for_layout_object: 32
+    mask_size_for_layout_object: 128
     loader_num_workers: 10
-    size:
-      - 128
-      - 128
+    used_condition_types: [ 'obj_class','obj_bbox' ]
+    image_size: 128
 
     train:
       batch_size: 2
       shuffle: True
     val:
+      batch_size: 2
+      shuffle: False
+    test:
       batch_size: 2
       shuffle: False
 
@@ -112,6 +114,10 @@ sample:
   clip_denoised: True
   save_imgs_for_visualization: True
   save_cropped_images: False
+  adaptive_step_size: False
+  rtol: 0.05
+  fast_version: True
+  eps: 1e-4
 
 
 

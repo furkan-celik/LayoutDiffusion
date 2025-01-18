@@ -107,7 +107,7 @@ class WebUIPilotDataset(torch.utils.data.Dataset):
 
         
 class WebUIDataset(torch.utils.data.Dataset):
-  def __init__(self, split_file, boxes_dir='../../downloads/webui-boxes/all_data', rawdata_screenshots_dir='../../downloads/ds', class_map_file="../../metadata/screenrecognition/class_map.json", min_area=100, device_scale=DEVICE_SCALE, max_boxes=100, max_skip_boxes=100, size=(128, 128), layout_length=10, **kwargs):
+  def __init__(self, split_file, boxes_dir='../../downloads/webui-boxes/all_data', rawdata_screenshots_dir='../../downloads/ds', class_map_file="../../metadata/screenrecognition/class_map.json", min_area=100, device_scale=DEVICE_SCALE, max_boxes=100, max_skip_boxes=100, image_size=(128, 128), layout_length=10, **kwargs):
       super(WebUIDataset, self).__init__()
       self.max_boxes = max_boxes
       self.max_skip_boxes = max_skip_boxes
@@ -132,10 +132,10 @@ class WebUIDataset(torch.utils.data.Dataset):
       self.label2Idx = class_map['label2Idx']
       self.num_classes = max([int(k) for k in self.idx2Label.keys()]) + 1
       self.img_transforms = transforms.Compose([transforms.ToTensor(),
-          transforms.Resize(size, antialias=True)])
+          transforms.Resize((image_size, image_size), antialias=True)])
           # image_normalize()])
 
-      self.size = size
+      self.image_size = (image_size, image_size)
       self.layout_length = layout_length
 
 
@@ -170,6 +170,7 @@ class WebUIDataset(torch.utils.data.Dataset):
           target = {}
           boxes = []
           labels = []
+          labelNames = []
           scale = self.device_scale[device_name.split("_")[0]]
 
           inds = list(range(len(key_dict['labels'])))
@@ -198,6 +199,7 @@ class WebUIDataset(torch.utils.data.Dataset):
               label = key_dict['labels'][i]
               labelIdx = [self.label2Idx[label[li]] if label[li] in self.label2Idx else self.label2Idx['OTHER'] for li in range(len(label))][0]
               # labelHot = makeMultiHotVec(set(label), self.num_classes)
+              labelNames.append(label[0])
               labels.append(labelIdx)
 
           if len(boxes) > self.max_skip_boxes:
@@ -210,18 +212,21 @@ class WebUIDataset(torch.utils.data.Dataset):
 
           target['obj_bbox'] = boxes if len(boxes.shape) == 2 else torch.zeros(0, 4)
           target['obj_class'] = labels
+          target["obj_class_name"] = labelNames;
           target['image_id'] = torch.tensor([idx])
           target['area'] = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0]) if len(boxes.shape) == 2 else torch.zeros(0)
           target['iscrowd'] = torch.zeros((boxes.shape[0],), dtype=torch.long) if len(boxes.shape) == 2 else torch.zeros(0, dtype=torch.long)
           target["is_valid_obj"] = torch.ones(len(target["obj_bbox"]))
+          target["num_obj"] = len(inds)
 
           for k in target:
-              target[k] = target[k][:self.max_boxes]
+              if not isinstance(target[k], int):
+                target[k] = target[k][:self.max_boxes]
 
-          target["obj_bbox"][:, 0] /= (org_size[0] / self.size[1])
-          target["obj_bbox"][:, 1] /= (org_size[1] / self.size[0])
-          target["obj_bbox"][:, 2] /= (org_size[0] / self.size[1])
-          target["obj_bbox"][:, 3] /= (org_size[1] / self.size[0])
+          target["obj_bbox"][:, 0] /= (org_size[0] / self.image_size[1])
+          target["obj_bbox"][:, 1] /= (org_size[1] / self.image_size[0])
+          target["obj_bbox"][:, 2] /= (org_size[0] / self.image_size[1])
+          target["obj_bbox"][:, 3] /= (org_size[1] / self.image_size[0])
 
           target["obj_bbox"] = torch.nn.functional.pad(target["obj_bbox"], (0, 0, 0, self.layout_length - len(target["obj_bbox"])), mode="constant", value=0)
           target["obj_class"] = torch.nn.functional.pad(target["obj_class"], (0, self.layout_length - len(target["obj_class"])), mode="constant", value=0)

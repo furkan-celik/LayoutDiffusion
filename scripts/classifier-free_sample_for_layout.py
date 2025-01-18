@@ -22,7 +22,7 @@ from layout_diffusion.respace import build_diffusion
 from layout_diffusion.util import fix_seed
 from layout_diffusion.dataset.util import image_unnormalize_batch, get_cropped_image
 from dpm_solver_pytorch import NoiseScheduleVP, model_wrapper, DPM_Solver
-
+import numpy as np
 
 def imageio_save_image(img_tensor, path):
     '''
@@ -33,10 +33,11 @@ def imageio_save_image(img_tensor, path):
     :return:
     '''
     tmp_img = image_unnormalize_batch(img_tensor).clamp(0.0, 1.0)
+    print(tmp_img.shape)
 
     imageio.imsave(
         uri=path,
-        im=tmp_img.cpu().detach().numpy().transpose(1, 2, 0),  # (H, W, C) numpy
+        im=(tmp_img.cpu().detach().numpy().transpose(1, 2, 0) * 255).astype(np.uint8),  # (H, W, C) numpy
     )
 
 
@@ -150,6 +151,10 @@ def main():
             for class_id in range(1, 179):  # 1-178
                 os.makedirs(os.path.join(log_dir, 'generated_cropped_imgs', str(class_id)), exist_ok=True)
                 os.makedirs(os.path.join(log_dir, 'real_cropped_imgs', str(class_id)), exist_ok=True)
+        elif cfg.data.type == "WUI":
+            for class_id in range(0, 32):  # 1-178
+                os.makedirs(os.path.join(log_dir, 'generated_cropped_imgs', str(class_id)), exist_ok=True)
+                os.makedirs(os.path.join(log_dir, 'real_cropped_imgs', str(class_id)), exist_ok=True)
         else:
             raise NotImplementedError
 
@@ -218,9 +223,10 @@ def main():
 
             total_time += (time.time() - start_time)
 
+
             for img_idx in range(imgs.shape[0]):
                 start_time = time.time()
-                filename = cond['filename'][img_idx]
+                filename = img_idx
                 obj_num = cond['num_obj'][img_idx]
                 obj_class = cond['obj_class'][img_idx]
                 obj_name = cond['obj_class_name'][img_idx]
@@ -230,6 +236,7 @@ def main():
                 absolute_obj_bbox[:, 0::2] = obj_bbox[:, 0::2] * imgs[img_idx].shape[2]
                 absolute_obj_bbox[:, 1::2] = obj_bbox[:, 1::2] * imgs[img_idx].shape[1]
 
+                print(sample[img_idx].shape)
                 # save generated imgs
                 imageio_save_image(
                     img_tensor=sample[img_idx],
@@ -248,6 +255,7 @@ def main():
                     )  # (1, L, 3, mask_size, mask_size), N=1
 
                     for obj_idx in range(obj_num):
+                        print(obj_name[1:1 + obj_num])
                         saved_cropped_image_name = "{}_{}_{}_{}_{}.png".format(filename, obj_idx, obj_class[1:1 + obj_num][obj_idx], obj_name[1:1 + obj_num][obj_idx].replace(' ', '-'), sample_idx)
                         utils.save_image(
                             image_unnormalize_batch(obj_imgs_from_resized_generated_imgs.squeeze(0)[obj_idx:obj_idx + 1]),
@@ -298,7 +306,7 @@ def main():
                         nrow=cfg.data.parameters.layout_length
                     )
 
-                if sample_idx == 0:
+                if sample_idx == 0 and False:
                     # save real imgs
                     imageio_save_image(
                         img_tensor=imgs[img_idx],

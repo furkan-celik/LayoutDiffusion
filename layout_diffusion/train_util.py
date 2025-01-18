@@ -11,6 +11,7 @@ from torch.optim import AdamW
 from . import dist_util, logger
 from .fp16_util import MixedPrecisionTrainer
 from .nn import update_ema
+from .save_util import imageio_save_image
 from layout_diffusion.resample import LossAwareSampler, UniformSampler
 from tqdm import tqdm
 import torch
@@ -240,11 +241,18 @@ class TrainLoop:
             if self.step % self.log_interval == 0:
                 logger.dumpkvs()
 
-            if self.step % self.save_interval == 0 and self.step > 0:
+            if self.step % self.save_interval == 0:
                 self.save()
                 # Run for a finite amount of time in integration tests.
                 if os.environ.get("DIFFUSION_TRAINING_TEST", "") and self.step > 0:
                     return
+
+                self.ddp_model.eval()
+                finalImage = self.diffusion.p_sample_loop(self.ddp_model, batch.shape, model_kwargs=cond, cond_fn=None, device=dist_util.dev())[-1]["sample"].clamp(-1, 1)
+                self.ddp_model.train()
+
+                for i in range(len(finalImage)):
+                  imageio_save_image(img_tensor=finalImage[i], path="{}/gens/{}_{}.png".format(logger.dir, self.step, i))
                 
                 # if (self.step + self.resume_step) >= 100000:
                 #     return

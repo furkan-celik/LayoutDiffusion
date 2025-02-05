@@ -249,6 +249,8 @@ class TrainLoop:
 
                 self.ddp_model.eval()
                 finalImage = self.diffusion.p_sample_loop(self.ddp_model, batch.shape, model_kwargs=cond, cond_fn=None, device=dist_util.dev(), progress=False)[-1]["sample"].clamp(-1, 1)
+                if self.latent_diffusion:
+                    finalImage = self.first_stage_model.decode(finalImage, return_dict=False)
                 self.ddp_model.train()
 
                 img_save_dir = os.path.join(get_blob_logdir(), "gens")

@@ -248,11 +248,15 @@ class TrainLoop:
                     return
 
                 self.ddp_model.eval()
-                finalImage = self.diffusion.p_sample_loop(self.ddp_model, batch.shape, model_kwargs=cond, cond_fn=None, device=dist_util.dev())[-1]["sample"].clamp(-1, 1)
+                finalImage = self.diffusion.p_sample_loop(self.ddp_model, batch.shape, model_kwargs=cond, cond_fn=None, device=dist_util.dev(), progress=False)[-1]["sample"].clamp(-1, 1)
                 self.ddp_model.train()
 
+                img_save_dir = os.path.join(get_blob_logdir(), "gens")
+                if not os.path.exists(img_save_dir):
+                    os.mkdir(img_save_dir)
+
                 for i in range(len(finalImage)):
-                  imageio_save_image(img_tensor=finalImage[i], path="{}/gens/{}_{}.png".format(logger.dir, self.step, i))
+                  imageio_save_image(img_tensor=finalImage[i], path=os.path.join(img_save_dir, "{}_{}.png".format(self.step, i)))
                 
                 # if (self.step + self.resume_step) >= 100000:
                 #     return

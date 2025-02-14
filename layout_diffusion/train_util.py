@@ -274,8 +274,8 @@ class TrainLoop:
                     (
                         self.batch_size,
                         self.model.in_channels,
-                        self.image_size,
-                        self.image_size,
+                        self.model.image_size,
+                        self.model.image_size,
                     ),
                     model_kwargs=cond,
                     cond_fn=None,
@@ -284,8 +284,8 @@ class TrainLoop:
                 )[-1]["sample"].clamp(-1, 1)
                 if self.latent_diffusion:
                     finalImage = self.first_stage_model.decode(
-                        finalImage / 0.18215, return_dict=False
-                    ).sample.clamp(-1, 1)
+                        finalImage / 0.18215, return_dict=True
+                    )["sample"].clamp(-1, 1)
                 self.ddp_model.train()
 
                 img_save_dir = os.path.join(get_blob_logdir(), "gens")

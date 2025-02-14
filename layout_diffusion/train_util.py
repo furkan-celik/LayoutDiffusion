@@ -24,36 +24,37 @@ from layout_diffusion.layout_diffusion_unet import LayoutDiffusionUNetModel
 INITIAL_LOG_LOSS_SCALE = 20.0
 from diffusers.models import AutoencoderKL
 
+
 class TrainLoop:
     def __init__(
-            self,
-            *,
-            model,
-            diffusion,
-            data,
-            batch_size,
-            micro_batch_size,
-            lr,
-            ema_rate,
-            log_interval,
-            save_interval,
-            resume_checkpoint,
-            use_fp16=False,
-            fp16_scale_growth=1e-3,
-            schedule_sampler=None,
-            weight_decay=0.0,
-            lr_anneal_steps=0,
-            find_unused_parameters=False,
-            only_update_parameters_that_require_grad=False,
-            classifier_free=False,
-            classifier_free_dropout=0.0,
-            pretrained_model_path='',
-            log_dir="",
-            latent_diffusion=False,
-            vae_root_dir="",
-            scale_factor=0.18215
+        self,
+        *,
+        model,
+        diffusion,
+        data,
+        batch_size,
+        micro_batch_size,
+        lr,
+        ema_rate,
+        log_interval,
+        save_interval,
+        resume_checkpoint,
+        use_fp16=False,
+        fp16_scale_growth=1e-3,
+        schedule_sampler=None,
+        weight_decay=0.0,
+        lr_anneal_steps=0,
+        find_unused_parameters=False,
+        only_update_parameters_that_require_grad=False,
+        classifier_free=False,
+        classifier_free_dropout=0.0,
+        pretrained_model_path="",
+        log_dir="",
+        latent_diffusion=False,
+        vae_root_dir="",
+        scale_factor=0.18215,
     ):
-        self.log_dir =log_dir
+        self.log_dir = log_dir
         logger.configure(dir=log_dir)
         self.model = model
         self.pretrained_model_path = pretrained_model_path
@@ -61,12 +62,20 @@ class TrainLoop:
             logger.log("loading model from {}".format(pretrained_model_path))
             try:
                 model.load_state_dict(
-                    dist_util.load_state_dict(pretrained_model_path, map_location="cpu"),strict=True
+                    dist_util.load_state_dict(
+                        pretrained_model_path, map_location="cpu"
+                    ),
+                    strict=True,
                 )
             except:
-                print('not successfully load the entire model, try to load part of model')
+                print(
+                    "not successfully load the entire model, try to load part of model"
+                )
                 model.load_state_dict(
-                    dist_util.load_state_dict(pretrained_model_path, map_location="cpu"),strict=False
+                    dist_util.load_state_dict(
+                        pretrained_model_path, map_location="cpu"
+                    ),
+                    strict=False,
                 )
 
         self.diffusion = diffusion
@@ -99,7 +108,7 @@ class TrainLoop:
             model=self.model,
             use_fp16=self.use_fp16,
             fp16_scale_growth=fp16_scale_growth,
-            only_update_parameters_that_require_grad=only_update_parameters_that_require_grad
+            only_update_parameters_that_require_grad=only_update_parameters_that_require_grad,
         )
 
         self.opt = AdamW(
@@ -142,7 +151,7 @@ class TrainLoop:
         self.classifier_free_dropout = classifier_free_dropout
         self.dropout_condition = False
 
-        self.scale_factor=scale_factor
+        self.scale_factor = scale_factor
         self.vae_root_dir = vae_root_dir
         self.latent_diffusion = latent_diffusion
         if self.latent_diffusion:
@@ -202,7 +211,9 @@ class TrainLoop:
         )
         logger.log(f"try to load optimizer state from checkpoint: {opt_checkpoint}")
         if bf.exists(opt_checkpoint):
-            logger.log(f"successfully loading optimizer state from checkpoint: {opt_checkpoint}")
+            logger.log(
+                f"successfully loading optimizer state from checkpoint: {opt_checkpoint}"
+            )
             state_dict = dist_util.load_state_dict(
                 opt_checkpoint, map_location=dist_util.dev()
             )
@@ -211,8 +222,8 @@ class TrainLoop:
     def run_loop(self):
         def run_loop_generator():
             while (
-                    not self.lr_anneal_steps
-                    or self.step + self.resume_step < self.lr_anneal_steps
+                not self.lr_anneal_steps
+                or self.step + self.resume_step < self.lr_anneal_steps
             ):
                 yield
 
@@ -225,17 +236,27 @@ class TrainLoop:
                     self.dropout_condition = True
 
                     if isinstance(self.model, LayoutDiffusionUNetModel):
-                        if 'obj_class' in self.model.layout_encoder.used_condition_types:
-                            cond['obj_class'] = torch.ones_like(cond['obj_class']).fill_(self.model.layout_encoder.num_classes_for_layout_object - 1)
-                            cond['obj_class'][:, 0] = 0
-                        if 'obj_bbox' in self.model.layout_encoder.used_condition_types:
-                            cond['obj_bbox'] = torch.zeros_like(cond['obj_bbox'])
-                            cond['obj_bbox'][:, 0] = torch.FloatTensor([0, 0, 1, 1])
-                        if 'obj_mask' in self.model.layout_encoder.used_condition_types:
-                            cond['obj_mask'] = torch.zeros_like(cond['obj_mask'])
-                            cond['obj_mask'][:, 0] = torch.ones(cond['obj_mask'].shape[-2:])
-                        cond['is_valid_obj'] = torch.zeros_like(cond['is_valid_obj'])
-                        cond['is_valid_obj'][:, 0] = 1.0
+                        if (
+                            "obj_class"
+                            in self.model.layout_encoder.used_condition_types
+                        ):
+                            cond["obj_class"] = torch.ones_like(
+                                cond["obj_class"]
+                            ).fill_(
+                                self.model.layout_encoder.num_classes_for_layout_object
+                                - 1
+                            )
+                            cond["obj_class"][:, 0] = 0
+                        if "obj_bbox" in self.model.layout_encoder.used_condition_types:
+                            cond["obj_bbox"] = torch.zeros_like(cond["obj_bbox"])
+                            cond["obj_bbox"][:, 0] = torch.FloatTensor([0, 0, 1, 1])
+                        if "obj_mask" in self.model.layout_encoder.used_condition_types:
+                            cond["obj_mask"] = torch.zeros_like(cond["obj_mask"])
+                            cond["obj_mask"][:, 0] = torch.ones(
+                                cond["obj_mask"].shape[-2:]
+                            )
+                        cond["is_valid_obj"] = torch.zeros_like(cond["is_valid_obj"])
+                        cond["is_valid_obj"][:, 0] = 1.0
 
             self.run_step(batch, cond)
             if self.step % self.log_interval == 0:
@@ -248,9 +269,23 @@ class TrainLoop:
                     return
 
                 self.ddp_model.eval()
-                finalImage = self.diffusion.p_sample_loop(self.ddp_model, batch.shape, model_kwargs=cond, cond_fn=None, device=dist_util.dev(), progress=False)[-1]["sample"].clamp(-1, 1)
+                finalImage = self.diffusion.p_sample_loop(
+                    self.ddp_model,
+                    (
+                        self.batch_size,
+                        self.model.in_channels,
+                        self.image_size,
+                        self.image_size,
+                    ),
+                    model_kwargs=cond,
+                    cond_fn=None,
+                    device=dist_util.dev(),
+                    progress=False,
+                )[-1]["sample"].clamp(-1, 1)
                 if self.latent_diffusion:
-                    finalImage = self.first_stage_model.decode(finalImage, return_dict=False)
+                    finalImage = self.first_stage_model.decode(
+                        finalImage / 0.18215, return_dict=False
+                    ).sample.clamp(-1, 1)
                 self.ddp_model.train()
 
                 img_save_dir = os.path.join(get_blob_logdir(), "gens")
@@ -258,8 +293,13 @@ class TrainLoop:
                     os.mkdir(img_save_dir)
 
                 for i in range(len(finalImage)):
-                  imageio_save_image(img_tensor=finalImage[i], path=os.path.join(img_save_dir, "{}_{}.png".format(self.step, i)))
-                
+                    imageio_save_image(
+                        img_tensor=finalImage[i],
+                        path=os.path.join(
+                            img_save_dir, "{}_{}.png".format(self.step, i)
+                        ),
+                    )
+
                 # if (self.step + self.resume_step) >= 100000:
                 #     return
 
@@ -281,12 +321,13 @@ class TrainLoop:
     def forward_backward(self, batch, cond):
         self.mp_trainer.zero_grad()
         for i in range(0, batch.shape[0], self.micro_batch_size):
-            micro = batch[i: i + self.micro_batch_size].to(dist_util.dev())
+            micro = batch[i : i + self.micro_batch_size].to(dist_util.dev())
             if self.latent_diffusion:
                 micro = self.get_first_stage_encoding(micro).detach()
             micro_cond = {
-                k: v[i: i + self.micro_batch_size].to(dist_util.dev())
-                for k, v in cond.items() if k in self.model.layout_encoder.used_condition_types
+                k: v[i : i + self.micro_batch_size].to(dist_util.dev())
+                for k, v in cond.items()
+                if k in self.model.layout_encoder.used_condition_types
             }
             last_batch = (i + self.micro_batch_size) >= batch.shape[0]
             t, weights = self.schedule_sampler.sample(micro.shape[0], dist_util.dev())
@@ -350,8 +391,10 @@ class TrainLoop:
 
         if dist.get_rank() == 0:
             with bf.BlobFile(
-                    bf.join(get_blob_logdir(), f"opt{(self.step + self.resume_step):07d}.pt"),
-                    "wb",
+                bf.join(
+                    get_blob_logdir(), f"opt{(self.step + self.resume_step):07d}.pt"
+                ),
+                "wb",
             ) as f:
                 th.save(self.opt.state_dict(), f)
 

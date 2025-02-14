@@ -51,7 +51,7 @@ schedule_sampler:
 data:
   type: "WUI"
   parameters:
-    split_file: "/content/train_split_web7k.json"
+    split_file: "/content/balanced_7k.json"
     boxes_dir: "/content/webui-boxes/all_data"
     rawdata_screenshots_dir: "/content/ds_all"
     class_map_file: "/content/metadata/screenrecognition/class_map.json"

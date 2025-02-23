@@ -318,7 +318,10 @@ def main():
                 imageio_save_image(
                     img_tensor=sample[img_idx],
                     path=os.path.join(
-                        log_dir, "generated_imgs/{}_{}.png".format(filename, sample_idx)
+                        log_dir,
+                        "generated_imgs/{}_{}_{}.png".format(
+                            filename, sample_idx, total_time
+                        ),
                     ),
                 )
                 total_time += time.time() - start_time
@@ -373,7 +376,10 @@ def main():
                     imageio_save_image(
                         img_tensor=generated_images_with_bboxs / 127.5 - 1.0,
                         path=os.path.join(
-                            log_dir, "generated_imgs_with_bboxs/{}.png".format(filename)
+                            log_dir,
+                            "generated_imgs_with_bboxs/{}_{}_{}.png".format(
+                                filename, sample_idx, total_time
+                            ),
                         ),
                     )
 
@@ -425,7 +431,9 @@ def main():
                         ),
                         os.path.join(
                             log_dir,
-                            "generated_images_with_each_bbox/{}.png".format(filename),
+                            "generated_images_with_each_bbox/{}_{}_{}.png".format(
+                                filename, sample_idx, total_time
+                            ),
                         ),
                         nrow=cfg.data.parameters.layout_length,
                     )

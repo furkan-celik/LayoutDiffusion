@@ -422,7 +422,9 @@ def main():
                     # save real imgs
                     imageio_save_image(
                         img_tensor=imgs[img_idx],
-                        path=os.path.join(log_dir, "real_imgs/{}.png".format(filename)),
+                        path=os.path.join(
+                            log_dir, "real_imgs/{}_{}.png".format(batch_idx, filename)
+                        ),
                     )
 
                     # save annotations of real imgs
@@ -430,8 +432,8 @@ def main():
                         os.path.join(
                             log_dir,
                             "gt_annotations/{}_{}.json".format(batch_idx, filename),
-                            "w",
                         ),
+                        "w",
                     ) as f:
                         gt_annotations = {}
                         for key, value in cond.items():

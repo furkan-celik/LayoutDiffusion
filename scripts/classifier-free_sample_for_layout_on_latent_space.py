@@ -20,29 +20,11 @@ from layout_diffusion.dataset.data_loader import build_loaders
 from layout_diffusion.layout_diffusion_unet import build_model
 from layout_diffusion.respace import build_diffusion
 from layout_diffusion.util import fix_seed
+from layout_diffusion.save_util import imageio_save_image
 from layout_diffusion.dataset.util import image_unnormalize_batch, get_cropped_image
 from dpm_solver_pytorch import NoiseScheduleVP, model_wrapper, DPM_Solver
 from diffusers.models import AutoencoderKL
 import numpy as np
-
-
-def imageio_save_image(img_tensor, path):
-    """
-    :param img_tensor: (C, H, W) torch.Tensor
-    :param path:
-    :param args:
-    :param kwargs:
-    :return:
-    """
-    tmp_img = image_unnormalize_batch(img_tensor).clamp(0.0, 1.0)
-    print(tmp_img.shape)
-
-    imageio.imsave(
-        uri=path,
-        im=(tmp_img.cpu().detach().numpy().transpose(1, 2, 0) * 255).astype(
-            np.uint8
-        ),  # (H, W, C) numpy
-    )
 
 
 def main():
@@ -319,9 +301,7 @@ def main():
                     img_tensor=sample[img_idx],
                     path=os.path.join(
                         log_dir,
-                        "generated_imgs/{}_{}_{}.png".format(
-                            filename, sample_idx, total_time
-                        ),
+                        "generated_imgs/{}_{}.png".format(batch_idx, filename),
                     ),
                 )
                 total_time += time.time() - start_time
@@ -377,8 +357,8 @@ def main():
                         img_tensor=generated_images_with_bboxs / 127.5 - 1.0,
                         path=os.path.join(
                             log_dir,
-                            "generated_imgs_with_bboxs/{}_{}_{}.png".format(
-                                filename, sample_idx, total_time
+                            "generated_imgs_with_bboxs/{}_{}.png".format(
+                                batch_idx, filename
                             ),
                         ),
                     )
@@ -431,14 +411,14 @@ def main():
                         ),
                         os.path.join(
                             log_dir,
-                            "generated_images_with_each_bbox/{}_{}_{}.png".format(
-                                filename, sample_idx, total_time
+                            "generated_images_with_each_bbox/{}_{}.png".format(
+                                batch_idx, filename
                             ),
                         ),
                         nrow=cfg.data.parameters.layout_length,
                     )
 
-                if sample_idx == 0 and False:
+                if sample_idx == 0:
                     # save real imgs
                     imageio_save_image(
                         img_tensor=imgs[img_idx],
@@ -448,14 +428,17 @@ def main():
                     # save annotations of real imgs
                     with open(
                         os.path.join(
-                            log_dir, "gt_annotations/{}.json".format(filename)
+                            log_dir,
+                            "gt_annotations/{}_{}.json".format(batch_idx, filename),
+                            "w",
                         ),
-                        "w",
                     ) as f:
                         gt_annotations = {}
                         for key, value in cond.items():
                             if isinstance(value, (torch.Tensor)):
                                 gt_annotations[key] = value.tolist()[img_idx]
+                            elif isinstance(value[img_idx], (torch.Tensor)):
+                                gt_annotations[key] = value[img_idx].tolist()
                             else:
                                 gt_annotations[key] = value[img_idx]
                         f.write(json.dumps(gt_annotations))

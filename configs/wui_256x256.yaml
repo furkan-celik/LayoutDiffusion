@@ -55,8 +55,8 @@ data:
     boxes_dir: "/content/webui-boxes/all_data"
     rawdata_screenshots_dir: "/content/ds_all"
     class_map_file: "/content/metadata/screenrecognition/class_map.json"
-    max_boxes: 30
-    layout_length: 10
+    max_boxes: 100
+    layout_length: 100
     num_classes_for_layout_object: 32
     mask_size_for_layout_object: 128
     loader_num_workers: 10

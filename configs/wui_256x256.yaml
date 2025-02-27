@@ -54,7 +54,7 @@ data:
     split_file: "/content/balanced_7k.json"
     boxes_dir: "/content/webui-boxes/all_data"
     rawdata_screenshots_dir: "/content/ds_all"
-    class_map_file: "/content/metadata/screenrecognition/class_map.json"
+    class_map_file: "/content/LayoutDiffusion/class_map.json"
     max_boxes: 100
     layout_length: 100
     num_classes_for_layout_object: 32

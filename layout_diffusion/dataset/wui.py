@@ -263,9 +263,9 @@ class WebUIDataset(torch.utils.data.Dataset):
                 )
                 for li in range(len(label))
             ]
-            # labelHot = makeMultiHotVec(set(label), self.num_classes)
+            labelHot = makeMultiHotVec(set(labelIdx), self.num_classes)
             labelNames.append(label)
-            labels.append(labelIdx)
+            labels.append(labelHot)
 
         if len(boxes) > self.max_skip_boxes:
             # print("skipped due to too many objects", len(boxes))
@@ -273,7 +273,7 @@ class WebUIDataset(torch.utils.data.Dataset):
 
         boxes = torch.tensor(boxes, dtype=torch.float)
 
-        labels = torch.tensor(labels, dtype=torch.long)
+        labels = torch.tensor(labels, dtype=torch.float)
 
         target["obj_bbox"] = boxes if len(boxes.shape) == 2 else torch.zeros(0, 4)
         target["obj_class"] = labels

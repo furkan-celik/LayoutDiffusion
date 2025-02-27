@@ -1,5 +1,6 @@
 {
     "idx2Label": {
+        "0": "OTHER",
         "1": "LineBreak",
         "2": "generic",
         "3": "img",
@@ -83,6 +84,7 @@
         "81": "log"
     },
     "label2Idx": {
+        "OTHER": 0,
         "LineBreak": 1,
         "generic": 2,
         "img": 3,

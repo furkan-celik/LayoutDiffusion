@@ -57,7 +57,7 @@ data:
     class_map_file: "/content/LayoutDiffusion/class_map.json"
     max_boxes: 100
     layout_length: 100
-    num_classes_for_layout_object: 32
+    num_classes_for_layout_object: 82
     mask_size_for_layout_object: 128
     loader_num_workers: 10
     used_condition_types: ["obj_class", "obj_bbox"]

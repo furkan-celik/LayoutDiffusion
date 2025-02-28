@@ -288,8 +288,8 @@ def main():
                 start_time = time.time()
                 filename = img_idx
                 obj_num = cond["num_obj"][img_idx]
-                obj_class = cond["obj_class"][img_idx]
-                obj_name = cond["obj_class_name"][img_idx]
+                obj_class = cond["obj_class"][img_idx][0]
+                obj_name = cond["obj_class_name"][img_idx][0]
                 is_valid_obj = cond["is_valid_obj"].long().tolist()[img_idx]
                 obj_bbox = cond["obj_bbox"][img_idx]
                 absolute_obj_bbox = obj_bbox.clone()
@@ -348,7 +348,7 @@ def main():
                         image=(sample[img_idx] * 127.5 + 127.5).to(torch.uint8).cpu(),
                         boxes=absolute_obj_bbox[torch.BoolTensor(is_valid_obj)],
                         labels=[
-                            cond["obj_class_name"][img_idx][i]
+                            cond["obj_class_name"][img_idx][i][0]
                             for i, j in enumerate(is_valid_obj)
                             if j
                         ],
@@ -380,7 +380,7 @@ def main():
                                     .to(torch.uint8)
                                     .cpu(),
                                     boxes=absolute_obj_bbox[i : i + 1],
-                                    labels=[cond["obj_class_name"][img_idx][i]],
+                                    labels=[cond["obj_class_name"][img_idx][i][0]],
                                     width=2,
                                 )
                             )
@@ -390,7 +390,7 @@ def main():
                                     .to(torch.uint8)
                                     .cpu(),
                                     boxes=absolute_obj_bbox[i : i + 1],
-                                    labels=[cond["obj_class_name"][img_idx][i]],
+                                    labels=[cond["obj_class_name"][img_idx][i][0]],
                                     width=2,
                                 )
                             )
@@ -486,7 +486,7 @@ def main():
                             image=(imgs[img_idx] * 127.5 + 127.5).to(torch.uint8).cpu(),
                             boxes=absolute_obj_bbox[torch.BoolTensor(is_valid_obj)],
                             labels=[
-                                cond["obj_class_name"][img_idx][i]
+                                cond["obj_class_name"][img_idx][i][0]
                                 for i, j in enumerate(is_valid_obj)
                                 if j
                             ],

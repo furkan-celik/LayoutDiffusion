@@ -309,7 +309,7 @@ class WebUIDataset(torch.utils.data.Dataset):
         )
         target["obj_class"] = torch.nn.functional.pad(
             target["obj_class"],
-            (0, self.layout_length - len(target["obj_class"])),
+            (0, 0, 0, self.layout_length - len(target["obj_class"])),
             mode="constant",
             value=0,
         )

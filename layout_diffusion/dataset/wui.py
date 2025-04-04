@@ -322,6 +322,151 @@ class WebUIDataset(torch.utils.data.Dataset):
 
         return img, target  # return image and target dict
 
+class WebUIDatasetTest(torch.utils.data.Dataset):
+    def __init__(
+        self,
+        boxes_file,
+        class_map_file="class_map.json",
+        min_area=100,
+        device_scale=DEVICE_SCALE,
+        max_boxes=100,
+        max_skip_boxes=100,
+        resized_size=128,
+        layout_length=10,
+        base_size=(1920,1080),
+        **kwargs
+    ):
+        super(WebUIDatasetTest, self).__init__()
+        self.max_boxes = max_boxes
+        self.max_skip_boxes = max_skip_boxes
+        self.keys = []
+
+        with open(boxes_file, "r") as f:
+            self.boxes = json.load(f)
+
+        self.min_area = min_area
+        self.device_scale = device_scale
+        with open(class_map_file, "r") as f:
+            class_map = json.load(f)
+        self.idx2Label = class_map["idx2Label"]
+        self.label2Idx = class_map["label2Idx"]
+        self.num_classes = max([int(k) for k in self.idx2Label.keys()]) + 1
+        # image_normalize()])
+
+        self.image_size = (resized_size, resized_size)
+        self.layout_length = layout_length
+        self.base_size = base_size
+
+    def __len__(self):
+        return len(self.boxes)
+
+    def total_objects(self):
+        to = 0
+        for i in range(len(self.keys)):
+            with open(self.keys[i], "r") as f:
+                key_dict = json.load(f)
+            to += len(key_dict["labels"])
+        return to
+
+    def __getitem__(self, idx):
+        # try:
+        idx = idx % len(self.boxes)
+
+        target = {}
+        boxes = []
+        masks = []
+        labels = []
+        labelNames = []
+
+        key_dict = self.boxes[idx]
+
+        for i in range(len(key_dict["contentBoxes"])):
+            box = key_dict["contentBoxes"][i]
+
+            box[0] = round(min(max(0, box[0]), self.base_size[0]) / (self.base_size[0] / self.image_size[0]))
+            box[1] = round(min(max(0, box[1]), self.base_size[1]) / (self.base_size[1] / self.image_size[1]))
+            box[2] = round(min(max(0, box[2]), self.base_size[0]) / (self.base_size[0] / self.image_size[0]))
+            box[3] = round(min(max(0, box[3]), self.base_size[1]) / (self.base_size[1] / self.image_size[1]))
+            box.append(len(boxes) + 1)
+
+            # box[0] *= self.image_size[0]
+            # box[1] *= self.image_size[1]
+            # box[2] *= self.image_size[0]
+            # box[3] *= self.image_size[1]
+
+            # skip invalid boxes
+            if box[0] < 0 or box[1] < 0 or box[2] < 0 or box[3] < 0:
+                continue
+            if box[3] <= box[1] or box[2] <= box[0]:
+                continue
+            if (box[3] - box[1]) * (
+                box[2] - box[0]
+            ) <= self.min_area:  # get rid of really small elements
+                continue
+            boxes.append(box)
+            label = key_dict["labels"][i]
+            labelIdx = [
+                (
+                    self.label2Idx[label[li]]
+                    if label[li] in self.label2Idx
+                    else self.label2Idx["OTHER"]
+                )
+                for li in range(len(label))
+            ]
+            # labelHot = makeMultiHotVec(set(labelIdx), self.num_classes)
+            labelNames.append(", ".join(label))
+            labels.append(labelIdx[0])
+
+        if len(boxes) > self.max_skip_boxes:
+            # print("skipped due to too many objects", len(boxes))
+            return self.__getitem__(idx + 1)
+
+        boxes = torch.tensor(boxes, dtype=torch.float)
+
+        labels = torch.tensor(labels, dtype=torch.long)
+
+        target["obj_bbox"] = boxes if len(boxes.shape) == 2 else torch.zeros(0, 4)
+        target["obj_class"] = labels
+        target["obj_class_name"] = labelNames
+        target["image_id"] = torch.tensor([idx])
+        target["area"] = (
+            (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+            if len(boxes.shape) == 2
+            else torch.zeros(0)
+        )
+        target["iscrowd"] = (
+            torch.zeros((boxes.shape[0],), dtype=torch.long)
+            if len(boxes.shape) == 2
+            else torch.zeros(0, dtype=torch.long)
+        )
+        target["is_valid_obj"] = torch.ones(len(target["obj_bbox"]))
+        target["num_obj"] = len(key_dict["contentBoxes"])
+
+        for k in target:
+            if not isinstance(target[k], int):
+                target[k] = target[k][: self.max_boxes]
+
+        target["obj_bbox"] = torch.nn.functional.pad(
+            target["obj_bbox"],
+            (0, 0, 0, self.layout_length - len(target["obj_bbox"])),
+            mode="constant",
+            value=0,
+        )
+        target["obj_class"] = torch.nn.functional.pad(
+            [",".join(c) for c in target["obj_class"]],
+            (0, 0, 0, self.layout_length - len(target["obj_class"])),
+            mode="constant",
+            value=0,
+        )
+        target["is_valid_obj"] = torch.nn.functional.pad(
+            target["is_valid_obj"],
+            (0, self.layout_length - len(target["is_valid_obj"])),
+            mode="constant",
+            value=0,
+        )
+
+        return None, target  # return image and target dict
+
     # except Exception as e:
     #     print("failed", idx, str(e))
     #     return self.__getitem__(idx + 1)
@@ -415,6 +560,18 @@ def build_wui_dsets(cfg, mode="train"):
     assert mode in ["train", "val", "test"]
     params = cfg.data.parameters
     dataset = WebUIDataset(**params)
+
+    num_objs = dataset.total_objects()
+    num_imgs = len(dataset)
+    print("%s dataset has %d images and %d objects" % (mode, num_imgs, num_objs))
+    print("(%.2f objects per image)" % (float(num_objs) / num_imgs))
+
+    return dataset
+
+def build_wui_dsets_test(cfg, mode="train"):
+    assert mode in ["train", "val", "test"]
+    params = cfg.data.parameters
+    dataset = WebUIDatasetTest(**params)
 
     num_objs = dataset.total_objects()
     num_imgs = len(dataset)

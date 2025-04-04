@@ -177,7 +177,7 @@ class MixedPrecisionTrainer:
         self.lg_loss_scale = initial_lg_loss_scale
 
         if self.use_fp16:
-            if only_update_parameters_that_require_grad:
+            if only_update_parameters_that_require_grad: 
                 self.param_groups_and_shapes = get_param_groups_and_shapes(
                     self.get_named_parameters_that_require_grad()
                 )

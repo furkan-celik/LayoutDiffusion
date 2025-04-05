@@ -21,7 +21,7 @@ def build_loaders(cfg, mode='train'):
         collate_fn = coco_collate_fn_for_layout
     elif cfg.data.type == "WUI-test":
         dataset = build_wui_dsets_test(cfg, mode=mode)
-        collate_fn = coco_collate_fn_for_layout_test
+        collate_fn = coco_collate_fn_for_layout
     else:
         raise NotImplementedError
 

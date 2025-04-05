@@ -464,7 +464,7 @@ class WebUIDatasetTest(torch.utils.data.Dataset):
             value=0,
         )
 
-        return None, target  # return image and target dict
+        return torch.zeros((3, *self.image_size)), target  # return image and target dict
 
     # except Exception as e:
     #     print("failed", idx, str(e))

@@ -1,5 +1,5 @@
 
-from .coco import build_coco_dsets, coco_collate_fn_for_layout
+from .coco import build_coco_dsets, coco_collate_fn_for_layout, coco_collate_fn_for_layout_test
 from .vg import build_vg_dsets, vg_collate_fn_for_layout
 from .wui import build_wui_dsets, wui_collate_fn_for_layout, build_wui_dsets_test
 import torch.distributed as dist
@@ -21,7 +21,7 @@ def build_loaders(cfg, mode='train'):
         collate_fn = coco_collate_fn_for_layout
     elif cfg.data.type == "WUI-test":
         dataset = build_wui_dsets_test(cfg, mode=mode)
-        collate_fn = coco_collate_fn_for_layout
+        collate_fn = coco_collate_fn_for_layout_test
     else:
         raise NotImplementedError
 

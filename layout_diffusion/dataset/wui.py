@@ -387,7 +387,6 @@ class WebUIDatasetTest(torch.utils.data.Dataset):
             box[1] = round(min(max(0, box[1]), self.base_size[1]) / (self.base_size[1] / self.image_size[1]))
             box[2] = round(min(max(0, box[2]), self.base_size[0]) / (self.base_size[0] / self.image_size[0]))
             box[3] = round(min(max(0, box[3]), self.base_size[1]) / (self.base_size[1] / self.image_size[1]))
-            box.append(len(boxes) + 1)
 
             # box[0] *= self.image_size[0]
             # box[1] *= self.image_size[1]
@@ -413,9 +412,9 @@ class WebUIDatasetTest(torch.utils.data.Dataset):
                 )
                 for li in range(len(label))
             ]
-            # labelHot = makeMultiHotVec(set(labelIdx), self.num_classes)
-            labelNames.append(", ".join(label))
-            labels.append(labelIdx[0])
+            labelHot = makeMultiHotVec(set(labelIdx), self.num_classes)
+            labelNames.append(label)
+            labels.append(labelHot)
 
         if len(boxes) > self.max_skip_boxes:
             # print("skipped due to too many objects", len(boxes))
@@ -453,7 +452,7 @@ class WebUIDatasetTest(torch.utils.data.Dataset):
             value=0,
         )
         target["obj_class"] = torch.nn.functional.pad(
-            [",".join(c) for c in target["obj_class"]],
+            target["obj_class"],
             (0, 0, 0, self.layout_length - len(target["obj_class"])),
             mode="constant",
             value=0,

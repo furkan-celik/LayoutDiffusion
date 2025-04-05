@@ -461,6 +461,30 @@ def coco_collate_fn_for_layout(batch):
 
     return all_imgs, all_meta_data
 
+def coco_collate_fn_for_layout_test(batch):
+    """
+    Collate function to be used when wrapping CocoSceneGraphDataset in a
+    DataLoader. Returns a tuple of the following:
+
+    - imgs: FloatTensor of shape (N, C, H, W)
+    - objs: LongTensor of shape (N, L) giving object categories
+    - masks: FloatTensor of shape (N, L, H, W)
+    - is_valid_obj: FloatTensor of shape (N, L)
+    """
+
+    all_meta_data = defaultdict(list)
+    all_imgs = []
+
+    for i, (_, meta_data) in enumerate(batch):
+        for key, value in meta_data.items():
+            all_meta_data[key].append(value)
+
+    for key, value in all_meta_data.items():
+        if key in ['obj_bbox', 'obj_class', 'is_valid_obj'] or key.startswith('labels_from_layout_to_image_at_resolution'):
+            all_meta_data[key] = torch.stack(value)
+
+    return None, all_meta_data
+
 
 def build_coco_dsets(cfg, mode='train'):
     assert mode in ['train', 'val', 'test']

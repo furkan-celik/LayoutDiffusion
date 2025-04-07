@@ -276,7 +276,7 @@ class WebUIDataset(torch.utils.data.Dataset):
         labels = torch.tensor(labels, dtype=torch.float)
 
         target["obj_bbox"] = boxes if len(boxes.shape) == 2 else torch.zeros(0, 4)
-        target["obj_class"] = labels
+        target["obj_class"] = labels if len(labels.shape) == 2 else torch.zeros(0, self.num_classes)
         target["obj_class_name"] = labelNames
         target["image_id"] = torch.tensor([idx])
         target["area"] = (

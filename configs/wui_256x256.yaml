@@ -77,7 +77,7 @@ train:
   vae_root_dir: "./pretrained_models/sd-vae-ft-ema"
   latent_diffusion: True
   pretrained_model_path: ""
-  resume_checkpoint: "/content/LayoutDiffusion/log/COCO-stuff_256x256/latent_LayoutDiffusion_large/model0040000.pt"
+  resume_checkpoint: ""
   classifier_free: True
   classifier_free_dropout: 0.2
   lr: 1e-4

@@ -234,15 +234,15 @@ class WebUIDataset(torch.utils.data.Dataset):
 
         for i in inds:
             box = key_dict["contentBoxes"][i]
-            box[0] *= scale
-            box[1] *= scale
-            box[2] *= scale
-            box[3] *= scale
+            box[0] *= scale # w
+            box[1] *= scale # h
+            box[2] *= scale # w
+            box[3] *= scale # h
 
-            box[0] = min(max(0, box[0]), img_pil.size[0])
-            box[1] = min(max(0, box[1]), img_pil.size[1])
-            box[2] = min(max(0, box[2]), img_pil.size[0])
-            box[3] = min(max(0, box[3]), img_pil.size[1])
+            box[0] = round(min(max(0, box[0]), org_size[0]) / (org_size[0] / self.image_size[0]))
+            box[1] = round(min(max(0, box[1]), org_size[1]) / (org_size[1] / self.image_size[1]))
+            box[2] = round(min(max(0, box[2]), org_size[0]) / (org_size[0] / self.image_size[0]))
+            box[3] = round(min(max(0, box[3]), org_size[1]) / (org_size[1] / self.image_size[1]))
 
             # skip invalid boxes
             if box[0] < 0 or box[1] < 0 or box[2] < 0 or box[3] < 0:
@@ -295,11 +295,6 @@ class WebUIDataset(torch.utils.data.Dataset):
         for k in target:
             if not isinstance(target[k], int):
                 target[k] = target[k][: self.max_boxes]
-
-        target["obj_bbox"][:, 0] /= org_size[0] / self.image_size[1]
-        target["obj_bbox"][:, 1] /= org_size[1] / self.image_size[0]
-        target["obj_bbox"][:, 2] /= org_size[0] / self.image_size[1]
-        target["obj_bbox"][:, 3] /= org_size[1] / self.image_size[0]
 
         target["obj_bbox"] = torch.nn.functional.pad(
             target["obj_bbox"],
